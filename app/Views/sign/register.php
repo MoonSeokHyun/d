@@ -61,11 +61,11 @@
 <script>
    $(document).ready(function () {
         // 이메일 중복 체크
-        $('#email').on('input', function () {  // 'blur' 대신 'input' 이벤트 사용
+        $('#email').on('input', function () {
             var email = $(this).val();
             if (email) {
                 $.ajax({
-                    url: '/sign/check-email',  // 이메일 중복 체크 서버 경로
+                    url: '/sign/check-email',
                     type: 'POST',
                     data: { email: email, <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
                     success: function (response) {
@@ -88,11 +88,11 @@
         });
 
         // 아이디 중복 체크
-        $('#username').on('input', function () {  // 'blur' 대신 'input' 이벤트 사용
+        $('#username').on('input', function () {
             var username = $(this).val();
             if (username) {
                 $.ajax({
-                    url: '/sign/check-username',  // 아이디 중복 체크 서버 경로
+                    url: '/sign/check-username',
                     type: 'POST',
                     data: { username: username, <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
                     success: function (response) {
@@ -117,15 +117,12 @@
         // 이메일 인증 버튼 클릭
         $('#sendEmailBtn').click(function () {
             var email = $('#email').val();
-            console.log("이메일 인증 버튼 클릭됨: " + email);
-
             if (email) {
                 $.ajax({
-                    url: '/sign/send-verification-email',  // 이메일 인증 코드 전송을 위한 서버 경로
+                    url: '/sign/send-verification-email',
                     type: 'POST',
                     data: { email: email, <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
                     success: function (response) {
-                        console.log("서버 응답: ", response);
                         if (response.success) {
                             $('#sendEmailBtn').prop('disabled', true);
                             $('#sendEmailBtn').text('인증 이메일 발송 완료');
@@ -135,8 +132,7 @@
                             alert('이메일 전송에 실패했습니다.');
                         }
                     },
-                    error: function (jqXHR, textStatus, errorThrown) {
-                        console.log("AJAX 요청에 오류 발생: " + textStatus + ": " + errorThrown);
+                    error: function () {
                         alert('이메일 전송 중 오류가 발생했습니다.');
                     }
                 });
@@ -167,28 +163,26 @@
 
         // 회원가입 폼 제출
         $('#registerForm').submit(function (e) {
-            e.preventDefault();  // 기본 폼 제출 방지
+            e.preventDefault();
 
-            var formData = $(this).serialize(); // serialize()로 폼 데이터를 직렬화
+            var formData = new FormData(this);
 
             $.ajax({
                 url: '/sign/register',
                 type: 'POST',
                 data: formData,
+                processData: false,
+                contentType: false,
                 success: function (response) {
-                    console.log('회원가입 서버 응답: ', response);  // 서버 응답 확인
                     if (response.success) {
                         alert('회원가입이 완료되었습니다.');
-                        window.location.href = '/login';  // 로그인 페이지로 리디렉션
+                        window.location.href = '/sign/login';
                     } else {
                         alert('회원가입 실패');
-                        if (response.message) {
-                            alert('실패 이유: ' + response.message);
-                        }
+                        console.log('실패 이유:', response.message);
                     }
                 },
-                error: function (jqXHR, textStatus, errorThrown) {
-                    console.log("AJAX 요청에 오류 발생: " + textStatus + ": " + errorThrown);
+                error: function () {
                     alert('서버 요청에 실패했습니다.');
                 }
             });

@@ -35,14 +35,23 @@
         </form>
 
         <!-- 인증번호 입력 후 비밀번호 재설정 섹션 -->
-        <div id="resetPasswordSection" style="display:none;" class="mt-4">
-            <h5>새로운 비밀번호 설정</h5>
-            <form id="resetPasswordForm">
+        <div id="verificationSection" style="display:none;" class="mt-4">
+            <h5>인증번호 확인</h5>
+            <form id="verifyCodeForm">
                 <?= csrf_field(); ?>
                 <div class="form-group">
                     <label for="verification_code">인증번호</label>
                     <input type="text" id="verification_code" name="verification_code" class="form-control" required>
                 </div>
+                <button type="button" id="verifyCodeButton" class="btn btn-primary">인증번호 확인</button>
+            </form>
+        </div>
+
+        <!-- 비밀번호 재설정 섹션 -->
+        <div id="resetPasswordSection" style="display:none;" class="mt-4">
+            <h5>새로운 비밀번호 설정</h5>
+            <form id="resetPasswordForm">
+                <?= csrf_field(); ?>
                 <div class="form-group">
                     <label for="new_password">새로운 비밀번호</label>
                     <input type="password" id="new_password" name="new_password" class="form-control" required>
@@ -78,7 +87,7 @@
             });
         });
 
-        // 비밀번호 찾기
+        // 비밀번호 찾기 - 인증번호 전송
         $('#sendPasswordVerification').click(function () {
             var username = $('#username').val();
             var email = $('#password_email').val();
@@ -89,7 +98,7 @@
                 success: function (response) {
                     if (response.success) {
                         alert('인증번호가 이메일로 발송되었습니다. 이메일을 확인해 주세요.');
-                        $('#resetPasswordSection').show();
+                        $('#verificationSection').show();
                     } else {
                         alert('등록되지 않은 정보입니다.');
                     }
@@ -97,9 +106,26 @@
             });
         });
 
+        // 인증번호 확인
+        $('#verifyCodeButton').click(function () {
+            var code = $('#verification_code').val();
+            $.ajax({
+                url: '/sign/verify-password-code',
+                type: 'POST',
+                data: { code: code, <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
+                success: function (response) {
+                    if (response.success) {
+                        alert('인증번호가 확인되었습니다. 새로운 비밀번호를 입력해 주세요.');
+                        $('#resetPasswordSection').show();
+                    } else {
+                        alert('인증번호가 일치하지 않습니다.');
+                    }
+                }
+            });
+        });
+
         // 비밀번호 재설정
         $('#resetPasswordButton').click(function () {
-            var code = $('#verification_code').val();
             var newPassword = $('#new_password').val();
             var confirmPassword = $('#confirm_password').val();
 
@@ -111,13 +137,13 @@
             $.ajax({
                 url: '/sign/reset-password',
                 type: 'POST',
-                data: { code: code, new_password: newPassword, <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
+                data: { new_password: newPassword, <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
                 success: function (response) {
                     if (response.success) {
                         alert('비밀번호가 성공적으로 변경되었습니다.');
                         window.location.href = '/sign/login';
                     } else {
-                        alert('인증번호가 일치하지 않습니다.');
+                        alert('비밀번호 변경에 실패했습니다.');
                     }
                 }
             });
