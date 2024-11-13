@@ -6,9 +6,9 @@ use CodeIgniter\Config\BaseConfig;
 
 class Email extends BaseConfig
 {
-    public string $fromEmail  = '';
-    public string $fromName   = '';
-    public string $recipients = '';
+    public string $fromEmail  = 'gjqmaoslwj@naver.com';  // 발신 이메일 (네이버 이메일)
+    public string $fromName   = 'Vegan Korea';            // 발신자 이름
+    public string $recipients = '';                        // 수신자 이메일 (기본값은 빈 값)
 
     /**
      * The "user agent"
@@ -18,32 +18,27 @@ class Email extends BaseConfig
     /**
      * The mail sending protocol: mail, sendmail, smtp
      */
-    public string $protocol = 'mail';
-
-    /**
-     * The server path to Sendmail.
-     */
-    public string $mailPath = '/usr/sbin/sendmail';
+    public string $protocol = 'smtp';
 
     /**
      * SMTP Server Hostname
      */
-    public string $SMTPHost = '';
+    public string $SMTPHost = 'smtp.naver.com';  // 네이버 SMTP 서버
 
     /**
      * SMTP Username
      */
-    public string $SMTPUser = '';
+    public string $SMTPUser = 'gjqmaoslwj@naver.com';  // 네이버 이메일 아이디 (SMTP 인증 이메일)
 
     /**
      * SMTP Password
      */
-    public string $SMTPPass = '';
+    public string $SMTPPass = '!Alcls1475';  // 네이버 로그인 비밀번호 또는 앱 비밀번호
 
     /**
      * SMTP Port
      */
-    public int $SMTPPort = 25;
+    public int $SMTPPort = 587;  // TLS를 사용하는 경우 포트 587
 
     /**
      * SMTP Timeout (in seconds)
@@ -51,18 +46,13 @@ class Email extends BaseConfig
     public int $SMTPTimeout = 5;
 
     /**
-     * Enable persistent SMTP connections
-     */
-    public bool $SMTPKeepAlive = false;
-
-    /**
      * SMTP Encryption.
      *
      * @var string '', 'tls' or 'ssl'. 'tls' will issue a STARTTLS command
      *             to the server. 'ssl' means implicit SSL. Connection on port
-     *             465 should set this to ''.
+     *             465 should set this to 'ssl'.
      */
-    public string $SMTPCrypto = 'tls';
+    public string $SMTPCrypto = 'tls';  // TLS 사용
 
     /**
      * Enable word-wrap
@@ -77,7 +67,7 @@ class Email extends BaseConfig
     /**
      * Type of mail, either 'text' or 'html'
      */
-    public string $mailType = 'text';
+    public string $mailType = 'html';  // 이메일 내용 형식
 
     /**
      * Character set (utf-8, iso-8859-1, etc.)
@@ -87,7 +77,7 @@ class Email extends BaseConfig
     /**
      * Whether to validate the email address
      */
-    public bool $validate = false;
+    public bool $validate = true;
 
     /**
      * Email Priority. 1 = highest. 5 = lowest. 3 = normal
