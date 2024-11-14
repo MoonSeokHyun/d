@@ -7,6 +7,14 @@ use App\Models\UserModel;
 
 class SignController extends Controller
 {
+    public function logout()
+{
+    // 모든 세션 데이터 제거
+    session()->destroy();
+
+    // 로그아웃 후 홈 페이지로 리다이렉트
+    return redirect()->to('/');
+}
     public function login()
     {
         helper(['form', 'url']);
@@ -228,6 +236,120 @@ class SignController extends Controller
     public function forgotCredentials()
 {
     return view('sign/forgot_credentials');
+}
+// Controller - SignController.php
+
+public function callback()
+{
+    $code = $this->request->getGet('code');
+    $state = $this->request->getGet('state');
+
+    if (!$code || !$state) {
+        return redirect()->to('/sign/login')->with('error', '네이버 로그인에 실패했습니다.');
+    }
+
+    $client_id = 'EepRLGsgU1qQXpkevnjh';
+    $client_secret = 'sKLN1A6BWd';
+    $redirect_uri = 'http://localhost:8080/callback';
+
+    $tokenUrl = "https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id={$client_id}&client_secret={$client_secret}&redirect_uri={$redirect_uri}&code={$code}&state={$state}";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $tokenUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $responseArr = json_decode($response, true);
+
+    if (!isset($responseArr['access_token'])) {
+        return redirect()->to('/sign/login')->with('error', '토큰을 받아오지 못했습니다.');
+    }
+
+    $accessToken = $responseArr['access_token'];
+
+    // 액세스 토큰으로 사용자 정보 가져오기
+    $userUrl = "https://openapi.naver.com/v1/nid/me";
+    $headers = ["Authorization: Bearer {$accessToken}"];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $userUrl);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $userResponse = curl_exec($ch);
+    curl_close($ch);
+
+    $userResponseArr = json_decode($userResponse, true);
+
+    if (isset($userResponseArr['response'])) {
+        $userData = $userResponseArr['response'];
+        $userId = $userData['id'] ?? null;
+        $userEmail = $userData['email'] ?? null;
+        $userName = $userData['name'] ?? null;
+        $userNickname = $userData['nickname'] ?? null;
+        $userProfileImage = $userData['profile_image'] ?? null;
+        $userPhoneNumber = $userData['mobile'] ?? null;
+
+        if (!$userEmail || !$userId) {
+            return redirect()->to('/sign/login')->with('error', '네이버 로그인에 필요한 정보가 부족합니다.');
+        }
+
+        $userModel = new UserModel();
+        $user = $userModel->where('email', $userEmail)->first();
+
+        if (!$user) {
+            $userModel->insert([
+                'username' => $userId,
+                'email' => $userEmail,
+                'name' => $userName,
+                'nickname' => $userNickname,
+                'profile_image' => $userProfileImage,
+                'phone_number' => $userPhoneNumber,
+                'password' => password_hash('defaultpassword', PASSWORD_DEFAULT),
+            ]);
+            $user = $userModel->where('email', $userEmail)->first();
+        }
+
+        session()->set(['user_id' => $user['user_id'], 'username' => $user['username']]);
+        return redirect()->to('/')->with('message', '로그인이 되었습니다.');
+    } else {
+        return redirect()->to('/sign/login')->with('error', '사용자 정보를 가져오지 못했습니다.');
+    }
+}
+
+
+public function naverLogin()
+{
+    $email = $this->request->getPost('email');
+    $name = $this->request->getPost('name');
+    $nickname = $this->request->getPost('nickname');
+    $profileImage = $this->request->getPost('profile_image');
+    $phoneNumber = $this->request->getPost('phone_number');
+    $userId = $this->request->getPost('id');  // 네이버 ID
+
+    if (!$email || !$userId) {
+        return $this->response->setJSON(['success' => false, 'message' => '잘못된 요청입니다.']);
+    }
+
+    $userModel = new UserModel();
+    $user = $userModel->where('email', $email)->first();
+
+    if (!$user) {
+        $userModel->insert([
+            'username' => $userId,
+            'email' => $email,
+            'name' => $name ?? '',
+            'nickname' => $nickname ?? '',
+            'profile_image' => $profileImage ?? '',
+            'phone_number' => $phoneNumber ?? '',
+            'password' => password_hash('defaultpassword', PASSWORD_DEFAULT),
+        ]);
+        $user = $userModel->where('email', $email)->first();
+    }
+
+    session()->set(['user_id' => $user['user_id'], 'username' => $user['username']]);
+
+    return $this->response->setJSON(['success' => true, 'message' => '로그인이 되었습니다.']);
 }
 
 }

@@ -15,7 +15,13 @@
             <h1>Vegan🍃 Korea🇰🇷</h1>
             <ul>
                 <li><a href="/">홈</a></li>
-                <li><a href="/sign/login">로그인</a></li>
+                
+                <!-- 로그인 여부에 따라 링크 표시 -->
+                <?php if (session()->has('user_id')): ?>
+                    <li><a href="/sign/logout">로그아웃</a></li>
+                <?php else: ?>
+                    <li><a href="/sign/login">로그인</a></li>
+                <?php endif; ?>
             </ul>
         </nav>
     </header>

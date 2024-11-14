@@ -28,3 +28,9 @@ $routes->post('sign/reset-password', 'SignController::resetPassword');
 
 
 $routes->get('sign/forgot-credentials', 'SignController::forgotCredentials');
+
+// app/Config/Routes.php
+$routes->get('/callback', 'SignController::callback');
+// app/Config/Routes.php
+$routes->post('/sign/naver-login', 'SignController::naverLogin');
+$routes->get('/sign/logout', 'SignController::logout');
