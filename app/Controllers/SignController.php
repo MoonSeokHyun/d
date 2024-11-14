@@ -15,37 +15,67 @@ class SignController extends Controller
     // 로그아웃 후 홈 페이지로 리다이렉트
     return redirect()->to('/');
 }
-    public function login()
-    {
-        helper(['form', 'url']);
 
-        if ($this->request->getMethod() == 'post') {
-            $rules = [
-                'email'    => 'required|valid_email',
-                'password' => 'required|min_length[6]',
-            ];
+public function login()
+{
+    // 로그인 페이지를 렌더링하는 메소드
+    return view('sign/login');
+}
 
-            if (!$this->validate($rules)) {
-                return view('sign/login', [
-                    'validation' => $this->validator,
-                ]);
-            }
+public function processLogin()
+{
+    helper(['form', 'url']);
 
-            $model = new UserModel();
-            $user = $model->where('email', $this->request->getVar('email'))->first();
+    // AJAX 요청만 처리하도록 설정
+    if ($this->request->isAJAX()) {
+        $rules = [
+            'username' => 'required|min_length[3]|max_length[50]',
+            'password' => 'required|min_length[6]',
+        ];
 
-            if ($user && password_verify($this->request->getVar('password'), $user['password'])) {
-                session()->set('user_id', $user['user_id']);
-                session()->set('username', $user['username']);
-                return redirect()->to('/dashboard');
-            } else {
-                session()->setFlashdata('error', '이메일 또는 비밀번호가 일치하지 않습니다.');
-                return redirect()->back()->withInput();
-            }
+        // 입력 검증 실패 시
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'error' => '아이디와 비밀번호를 확인해 주세요.'
+            ]);
         }
 
-        return view('sign/login');
+        $model = new UserModel();
+        $user = $model->where('username', $this->request->getVar('username'))->first();
+
+        // 사용자 및 비밀번호 확인
+        if ($user && password_verify($this->request->getVar('password'), $user['password'])) {
+            // 기본 이미지 설정
+            $profileImage = $user['profile_image'] ?? '/img/basic.png';
+            
+            // 세션에 사용자 정보 저장
+            session()->set([
+                'user_id' => $user['user_id'],
+                'username' => $user['username'],
+                'nickname' => $user['nickname'],
+                'profile_image' => $profileImage
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "{$user['username']}님, 환영합니다!"
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'error' => '아이디 또는 비밀번호가 일치하지 않습니다.'
+            ]);
+        }
     }
+
+    // AJAX 요청이 아닌 경우 오류 응답 반환
+    return $this->response->setJSON([
+        'success' => false,
+        'error' => '잘못된 요청입니다.'
+    ]);
+}
+
 
     public function checkEmail()
     {

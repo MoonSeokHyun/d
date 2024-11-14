@@ -15,9 +15,19 @@
             <h1>Vegan🍃 Korea🇰🇷</h1>
             <ul>
                 <li><a href="/">홈</a></li>
-                
-                <!-- 로그인 여부에 따라 링크 표시 -->
+
                 <?php if (session()->has('user_id')): ?>
+                    <!-- 로그인한 사용자의 프로필 이미지와 닉네임 표시 -->
+                    <li>
+                        <a href="/myinfo">
+                            <?php 
+                            // 프로필 이미지 설정, 기본 이미지 제공
+                            $profileImage = session()->get('profile_image') ?: '/img/basic.png';
+                            ?>
+                            <img src="<?= esc($profileImage) ?>" alt="프로필 이미지" style="width: 30px; height: 30px; border-radius: 50%; vertical-align: middle;">
+                            <?= esc(session()->get('nickname')) ?> <!-- 닉네임 표시 -->
+                        </a>
+                    </li>
                     <li><a href="/sign/logout">로그아웃</a></li>
                 <?php else: ?>
                     <li><a href="/sign/login">로그인</a></li>
@@ -28,7 +38,6 @@
 
     <?= $this->renderSection('content'); ?>
 
-    <!-- jQuery를 여기로 이동 -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </body>
 </html>
