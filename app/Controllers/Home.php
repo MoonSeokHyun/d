@@ -15,13 +15,16 @@ class Home extends BaseController
     public function getPosts()
     {
         $category_id = $this->request->getGet('category_id') ?? 0;
-        $db = \Config\Database::connect();
+        $page = intval($this->request->getGet('page') ?? 1);
+        $perPage = 7;
+        $offset = ($page - 1) * $perPage;
 
-        // 게시글 가져오기
+        $db = \Config\Database::connect();
         $builder = $db->table('posts_vegan');
         $builder->select('posts_vegan.*, categories_vegan.name as category_name');
         $builder->join('categories_vegan', 'categories_vegan.category_id = posts_vegan.category_id', 'left');
         $builder->orderBy('posts_vegan.created_at', 'DESC');
+        $builder->limit($perPage, $offset);
 
         if ($category_id != 0) {
             $builder->where('posts_vegan.category_id', $category_id);
@@ -29,13 +32,36 @@ class Home extends BaseController
 
         $posts = $builder->get()->getResultArray();
 
-        // 이미지 데이터 가져오기
         $imageModel = new ImageVeganModel();
         foreach ($posts as &$post) {
             $post['images'] = $imageModel->where('post_id', $post['post_id'])->findAll();
         }
 
         return $this->response->setJSON($posts);
+    }
+
+    public function getPostDetail($id)
+    {
+        $postModel = new PostModel();
+        $imageModel = new ImageVeganModel();
+
+        $post = $postModel->find($id);
+
+        if (!$post) {
+            return $this->response->setJSON(['error' => 'Post not found']);
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('categories_vegan');
+        $builder->where('category_id', $post['category_id']);
+        $category = $builder->get()->getRow();
+
+        $images = $imageModel->where('post_id', $id)->findAll();
+
+        $post['category_name'] = $category->name;
+        $post['images'] = $images;
+
+        return $this->response->setJSON($post);
     }
 
     public function createPost()
@@ -47,7 +73,6 @@ class Home extends BaseController
         $postModel = new PostModel();
         $imageModel = new ImageVeganModel();
 
-        // 게시글 데이터 처리
         $content = $this->request->getPost('content');
         $category_id = $this->request->getPost('category_id');
 
@@ -58,34 +83,26 @@ class Home extends BaseController
             'created_at' => date('Y-m-d H:i:s'),
         ]);
 
-        // 삽입된 게시글 ID 가져오기
         $post_id = $postModel->insertID();
 
-        // 이미지 데이터 처리
-        $images = $this->request->getFileMultiple('images'); // 다중 파일 가져오기
-        $uploadPath = FCPATH . 'uploads/' . date('Y-m-d'); // public/uploads/YYYY-MM-DD 디렉토리
+        $images = $this->request->getFileMultiple('images');
+        $uploadPath = FCPATH . 'uploads/' . date('Y-m-d');
         if (!is_dir($uploadPath)) {
             mkdir($uploadPath, 0777, true);
         }
 
         if ($images) {
-            foreach ($images as $image) { // 모든 파일 처리
+            foreach ($images as $image) {
                 if ($image->isValid() && !$image->hasMoved()) {
                     $imageName = $image->getRandomName();
                     $image->move($uploadPath, $imageName);
-        
-                    // 중복 체크: 동일한 경로가 있는지 확인
-                    $existingImage = $imageModel->where('file_path', '/uploads/' . date('Y-m-d') . '/' . $imageName)->first();
-                    if (!$existingImage) {
-                        $imageModel->insert([
-                            'post_id' => $post_id,
-                            'file_path' => '/uploads/' . date('Y-m-d') . '/' . $imageName,
-                        ]);
-                    }
+                    $imageModel->insert([
+                        'post_id' => $post_id,
+                        'file_path' => '/uploads/' . date('Y-m-d') . '/' . $imageName,
+                    ]);
                 }
             }
         }
-        
 
         return $this->response->setJSON(['success' => true]);
     }

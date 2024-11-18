@@ -47,4 +47,5 @@ $routes->post('myinfo/uploadProfileImage', 'MyInfoController::uploadProfileImage
 //글쓰기 기능들
 $routes->get('/', 'Home::index');
 $routes->get('/post/list', 'Home::getPosts');
+$routes->get('/post/detail/(:num)', 'Home::getPostDetail/$1'); // 상세 정보 라우트
 $routes->post('/post/create', 'Home::createPost');
