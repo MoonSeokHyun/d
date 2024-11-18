@@ -43,3 +43,8 @@ $routes->get('/sign/logout', 'SignController::logout');
 $routes->get('myinfo', 'MyInfoController::index'); // 내 정보 페이지
 $routes->post('myinfo/update', 'MyInfoController::update'); // 내 정보 수정 처리
 $routes->post('myinfo/uploadProfileImage', 'MyInfoController::uploadProfileImage');
+
+//글쓰기 기능들
+$routes->get('/', 'Home::index');
+$routes->get('/post/list', 'Home::getPosts');
+$routes->post('/post/create', 'Home::createPost');
