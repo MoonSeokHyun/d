@@ -102,9 +102,17 @@
         }
 
         fetch(`/post/list?category_id=${category}&page=${page}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+                return response.json();
+            })
             .then(posts => {
                 const postFeed = document.getElementById('postFeed');
+
+                if (page === 1) {
+                    postFeed.innerHTML = '';
+                }
+
                 posts.forEach(post => {
                     const postItem = document.createElement('div');
                     postItem.classList.add('post-item');
@@ -117,20 +125,19 @@
                                     <div class="slider-container">
                                         ${post.images.map(img => `
                                             <div class="slider-item">
-                                                <img src="${img.file_path}" style="width:100%; max-height:200px;">
+                                                <img src="${img.file_path}" style="width:100%; max-height:400px;">
                                             </div>
                                         `).join('')}
                                     </div>
-                                    <button class="slider-prev" onclick="moveSlide(event, -1)">&#10094;</button>
-                                    <button class="slider-next" onclick="moveSlide(event, 1)">&#10095;</button>
                                 </div>`
                                 : ''
                         }
-                        <button onclick="showDetail(${post.post_id})">View Details</button>
+                        <button class="btn btn-info" onclick="showDetail(${post.post_id})">View Details</button>
                     `;
                     postFeed.appendChild(postItem);
                 });
-            });
+            })
+            .catch(error => console.error(`Error fetching posts: ${error.message}`));
     }
 
     function createPost() {
@@ -139,15 +146,22 @@
             method: 'POST',
             body: formData,
         }).then(response => response.json())
-          .then(() => {
-              document.getElementById('postForm').reset();
-              loadPosts(selectedCategory);
+          .then(data => {
+              if (data.success) {
+                  document.getElementById('postForm').reset();
+                  loadPosts(selectedCategory, 1);
+              } else {
+                  alert(data.message || 'Failed to create post.');
+              }
           });
     }
 
     function showDetail(postId) {
         fetch(`/post/detail/${postId}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+                return response.json();
+            })
             .then(post => {
                 const modal = document.getElementById('detailModal');
                 const content = document.getElementById('detailContent');
@@ -160,78 +174,54 @@
                                 <div class="slider-container">
                                     ${post.images.map(img => `
                                         <div class="slider-item">
-                                            <img src="${img.file_path}" style="width:100%;">
+                                            <img src="${img.file_path}" style="width:100%; max-height:400px;">
                                         </div>
                                     `).join('')}
                                 </div>
-                                <button class="slider-prev" onclick="moveSlide(event, -1)">&#10094;</button>
-                                <button class="slider-next" onclick="moveSlide(event, 1)">&#10095;</button>
                             </div>`
                             : ''
                     }
                 `;
                 modal.style.display = 'block';
-            });
+            })
+            .catch(error => console.error(`Error fetching post detail: ${error.message}`));
     }
 
     function closeModal() {
         document.getElementById('detailModal').style.display = 'none';
     }
-
-    function moveSlide(event, direction) {
-        const slider = event.target.closest('.image-slider').querySelector('.slider-container');
-        const scrollAmount = slider.offsetWidth;
-        slider.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
-    }
 </script>
 
 <style>
-    .post-form {
-        margin-bottom: 20px;
-        padding: 15px;
-        border: 1px solid #ccc;
-    }
-    .post-feed {
-        margin-top: 20px;
-    }
-    .post-item {
-        margin-bottom: 20px;
-        padding: 10px;
-        border-bottom: 1px solid #ccc;
-    }
-    .image-slider {
-        position: relative;
-        overflow: hidden;
-        width: 100%;
-    }
-    .slider-container {
-        display: flex;
-        scroll-behavior: smooth;
-        overflow-x: auto;
-    }
-    .slider-item {
-        flex: 0 0 auto;
-        width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-    .slider-prev, .slider-next {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        background-color: rgba(0, 0, 0, 0.5);
-        color: white;
-        border: none;
-        font-size: 20px;
-        padding: 10px;
-        cursor: pointer;
-        z-index: 1;
-    }
-    .slider-prev {
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 10;
         left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.8);
     }
-    .slider-next {
-        right: 0;
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 50%;
+        border-radius: 10px;
+    }
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+    }
+    .close:hover, .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
     }
 </style>
 

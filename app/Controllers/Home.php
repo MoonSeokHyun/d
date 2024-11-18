@@ -7,6 +7,14 @@ use App\Models\ImageVeganModel;
 
 class Home extends BaseController
 {
+    protected $db;
+
+    public function __construct()
+    {
+        // 데이터베이스 연결 초기화
+        $this->db = \Config\Database::connect();
+    }
+
     public function index()
     {
         return view('home', ['title' => 'Vegan Community']);
@@ -19,8 +27,7 @@ class Home extends BaseController
         $perPage = 7;
         $offset = ($page - 1) * $perPage;
 
-        $db = \Config\Database::connect();
-        $builder = $db->table('posts_vegan');
+        $builder = $this->db->table('posts_vegan');
         $builder->select('posts_vegan.*, categories_vegan.name as category_name');
         $builder->join('categories_vegan', 'categories_vegan.category_id = posts_vegan.category_id', 'left');
         $builder->orderBy('posts_vegan.created_at', 'DESC');
@@ -51,14 +58,16 @@ class Home extends BaseController
             return $this->response->setJSON(['error' => 'Post not found']);
         }
 
-        $db = \Config\Database::connect();
-        $builder = $db->table('categories_vegan');
+        // 카테고리명 가져오기
+        $builder = $this->db->table('categories_vegan');
         $builder->where('category_id', $post['category_id']);
         $category = $builder->get()->getRow();
 
+        // 이미지 가져오기
         $images = $imageModel->where('post_id', $id)->findAll();
 
-        $post['category_name'] = $category->name;
+        // 결과 구성
+        $post['category_name'] = $category->name ?? 'Unknown';
         $post['images'] = $images;
 
         return $this->response->setJSON($post);
